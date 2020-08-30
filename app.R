@@ -39,31 +39,31 @@ tanakh_titles <- tanakh_only$contents %>% purrr::map_dfr(extract_titles)
 
 ui <- navbarPage(theme = shinytheme("sandstone"),
     
-    title = "ג gipharia",
-    
-    sidebarLayout(
-        
-
-        sidebarPanel(
-
-            selectInput(inputId = "text_input",
-                        label = "Select a text:",
-                        choices = tanakh_titles$title),
-            uiOutput("chapter_input_dropdown"),
-            br(),
-            HTML('<center><h3>Click on a verse to get GIFs!</h3></center>'),
-            
-            dataTableOutput(outputId = "read_chapter")
-        ),
-        
-
-        mainPanel(
-            
-
-
-            uiOutput("gif_view")
-            
-        )
+    title = "ג",
+    tabPanel("gipharia",
+            # icon  = icon("tasks"),
+             sidebarLayout(
+               
+               sidebarPanel(
+                 
+                 selectInput(inputId = "text_input",
+                             label = "Select a text:",
+                             choices = tanakh_titles$title),
+                 uiOutput("chapter_input_dropdown"),
+                 br(),
+                 HTML('<center><h3>Click on a verse to get GIFs!</h3></center>'),
+                 
+                 dataTableOutput(outputId = "read_chapter")
+               ),
+               
+               
+               mainPanel(
+                 
+                 
+                 
+                 uiOutput("gif_view")
+                 
+               ))
     )
 )
 
