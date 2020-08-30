@@ -8,6 +8,7 @@ library(dplyr)
 library(giphyr)
 library(httr)
 library(jsonlite)
+library(shinythemes)
 library(purrr)
 library(tibble)
 library(stringr)
@@ -36,9 +37,9 @@ tanakh_titles <- tanakh_only$contents %>% purrr::map_dfr(extract_titles)
 
 
 
-ui <- fluidPage(
+ui <- navbarPage(theme = shinytheme("sandstone"),
     
-    titlePanel("ג gipharia"),
+    title = "ג gipharia",
     
     sidebarLayout(
         
@@ -93,13 +94,14 @@ data <- reactive(grab_data(as.character(input$text_input),
                       as.character(input$chapter_input)) %>% 
             unlist() %>% 
             unlist() %>% 
-            tibble::as_tibble() %>%
-            mutate(verse = row_number()) %>% 
-            select(Verse = verse, Text = value)
+              tibble::as_tibble_col(column_name = "Text") %>%
+              mutate(verse = row_number()) %>% 
+              select(Verse = verse, Text)
 )
    
 output$read_chapter <- renderDataTable({
       req(data())
+  
       data() %>% 
         DT::datatable(rownames = F,selection=list(mode="single", target="row"),
                       options = list(dom="tipr"))
