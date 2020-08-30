@@ -1,12 +1,11 @@
 #to do list
-# customize DT appearance
-# connect DT cell click to gif api
 # make the UI pretty
 # push to shinyapps.io
 
 library(shiny)
 library(DT)
 library(dplyr)
+library(giphyr)
 library(httr)
 library(jsonlite)
 library(purrr)
@@ -59,34 +58,54 @@ ui <- fluidPage(
         # Main panel for displaying outputs ----
         mainPanel(
             
-            # Output: Histogram ----
-            dataTableOutput(outputId = "read_chapter")
+            dataTableOutput(outputId = "read_chapter"),
+            br(),
+            uiOutput("gif_view")
             
         )
     )
 )
 
+find_ele <- function(x, name) {
+  x_names <- names(x)
+  return(x[which(x_names == name)][[1]])
+}
+get_options <- function(input){
+  res <- httr::GET(paste0('https://www.sefaria.org/api/shape/', input))
+  #Unpack it:
+  data <- jsonlite::fromJSON(rawToChar(res$content))
+  options <- 1:data$length %>% as.integer()
+}
 
-# Define server logic required to draw a histogram ----
+
+#Function to get the texts from Sefaria's API:
+grab_data <- function(text, chapter){
+  #Get the data:
+  res <- httr::GET(paste0('https://www.sefaria.org/api/texts/',
+                          text,".", chapter, 
+                          '?context=0&pad=0'))
+  #Unpack it:
+  data <- jsonlite::fromJSON(rawToChar(res$content)) %>% .$text
+}
+
 server <- function(input, output, session) {
     
-    output$read_chapter <- renderDataTable({
-            grab_data(as.character(input$text_input), 
+
+data <- reactive(grab_data(as.character(input$text_input), 
                       as.character(input$chapter_input)) %>% 
             unlist() %>% 
             unlist() %>% 
             tibble::as_tibble() %>%
-            mutate(verse = row_number()) %>% 
-            DT::datatable()
-    }
-    )
+            mutate(verse = row_number()) 
+)
+   
+output$read_chapter <- renderDataTable({
+      req(data())
+      data() %>% 
+        DT::datatable(rownames = F,selection=list(mode="single", target="row"),
+                      options = list(dom="tipr"))
+   })
     
-    get_options <- function(input){
-        res <- httr::GET(paste0('https://www.sefaria.org/api/shape/', input))
-        #Unpack it:
-        data <- jsonlite::fromJSON(rawToChar(res$content))
-        options <- 1:data$length %>% as.integer()
-    }
     
     
     chapter_dropdown_values <- reactive({
@@ -101,17 +120,37 @@ server <- function(input, output, session) {
         )
         })
 
-    #Function to get the texts from Sefaria's API:
-    grab_data <- function(text, chapter){
-        #Get the data:
-        res <- httr::GET(paste0('https://www.sefaria.org/api/texts/',
-                                text,".", chapter, 
-                                '?context=0&pad=0'))
-        #Unpack it:
-        data <- jsonlite::fromJSON(rawToChar(res$content)) %>% .$text
-    }
     
     
+
+    
+prev_gifs <- reactive({
+       req(search_text())
+        out <- suppressWarnings(
+            gif_search(search_text(),
+                       img_format = c("fixed_height_small", "downsized",
+                                      "downsized_medium", "original")
+                      ))
+        if (is.null(out)) return(NULL)
+        return(out)
+    })
+        
+search_text <- reactive({
+    req(data)
+    req(input$read_chapter_rows_selected)
+    data()[input$read_chapter_rows_selected,] %>% 
+        pull(value)
+})
+
+output$gif_view <- renderUI({
+            req(prev_gifs())
+            apply(prev_gifs(), 1, function(x) {
+                actionLink(find_ele(x, "id"), title = find_ele(x, "slug"),
+                           label = NULL, class = "gifpreview", icon = NULL,
+                           tags$img(src = find_ele(x, "fixed_height_small")))
+            })
+        })
+
 }
 
 shinyApp(ui = ui, server = server)
