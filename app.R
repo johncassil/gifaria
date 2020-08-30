@@ -1,16 +1,10 @@
 #to do list
-
-# get the API book/chapter schema
-# put into dropdowns
 # customize DT appearance
 # connect DT cell click to gif api
 # make the UI pretty
 # push to shinyapps.io
 
-
-
 library(shiny)
-library(shinymaterial)
 library(DT)
 library(dplyr)
 library(httr)
@@ -20,32 +14,45 @@ library(tibble)
 library(stringr)
 
 
-#Function to get the texts from Sefaria's API:
-grab_data <- function(text){
-    
-    #Get the data:
-    res <- httr::GET(paste0('https://www.sefaria.org/api/texts/', text, '?context=0&pad=0'))
-    
-    #Unpack it:
-    data <- jsonlite::fromJSON(rawToChar(res$content)) %>% .$text
-}
+## On startup:
+
+#Get the books for the dropdown:
+
+#Make API Call:
+res <- httr::GET('https://www.sefaria.org/api/index/')
+
+#Unpack it:
+data <- jsonlite::fromJSON(rawToChar(res$content)) %>% 
+    filter(category == 'Tanakh')
+tanakh_only <- data$contents[[1]] %>% 
+    filter(category %in% c('Torah', 'Prophets', 'Writings')) %>% 
+    select(contents) 
+extract_titles <- function(data){data %>% select(title)}
+tanakh_titles <- tanakh_only$contents %>% purrr::map_dfr(extract_titles)
+
+
+
+
+##########################################
+
 
 
 ui <- fluidPage(
     
     # App title ----
-    titlePanel("Hello Shiny!"),
+    titlePanel("ג gipharia"),
     
     # Sidebar layout with input and output definitions ----
     sidebarLayout(
         
         # Sidebar panel for inputs ----
         sidebarPanel(
-            
             # Input: Slider for the number of bins ----
-            textInput(inputId = "chapter_input",
-                        label = "Chapter:",
-                        value = "Proverbs.1")
+            selectInput(inputId = "text_input",
+                        label = "Select a text:",
+                        choices = tanakh_titles$title),
+            
+            uiOutput("chapter_input_dropdown")
             
         ),
         
@@ -64,9 +71,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     
     output$read_chapter <- renderDataTable({
-        input$chapter_input %>% 
-            as.character() %>% 
-            grab_data() %>% 
+            grab_data(as.character(input$text_input), 
+                      as.character(input$chapter_input)) %>% 
             unlist() %>% 
             unlist() %>% 
             tibble::as_tibble() %>%
@@ -75,49 +81,37 @@ server <- function(input, output, session) {
     }
     )
     
+    get_options <- function(input){
+        res <- httr::GET(paste0('https://www.sefaria.org/api/shape/', input))
+        #Unpack it:
+        data <- jsonlite::fromJSON(rawToChar(res$content))
+        options <- 1:data$length %>% as.integer()
+    }
+    
+    
+    chapter_dropdown_values <- reactive({
+        input$text_input %>% get_options()
+    })
+    
+    
+    output$chapter_input_dropdown <- renderUI({
+        selectInput(inputId = "chapter_input",
+                    label = "Select a chapter: ",
+                    choices = chapter_dropdown_values()
+        )
+        })
+
+    #Function to get the texts from Sefaria's API:
+    grab_data <- function(text, chapter){
+        #Get the data:
+        res <- httr::GET(paste0('https://www.sefaria.org/api/texts/',
+                                text,".", chapter, 
+                                '?context=0&pad=0'))
+        #Unpack it:
+        data <- jsonlite::fromJSON(rawToChar(res$content)) %>% .$text
+    }
+    
+    
 }
 
 shinyApp(ui = ui, server = server)
-
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# ui <- material_page(
-#     title = "ג gipharia",
-#     nav_bar_fixed = TRUE,
-#     include_fonts = T,
-#     nav_bar_color = "indigo darken-4",
-#     material_side_nav(
-#         image_source = "/icon.png"),
-#     material_row(
-#         material_column(
-#             width = 7,
-#             material_dropdown(input_id = "chapter_picker", 
-#                               label = "Chapter", 
-#                               choices = "Proverbs.1", 
-#                               selected = "Proverbs.1")
-#             )
-#         ),
-#     textOutput(outputId = 'read_chapter')
-# )
-# 
-# server <- function(input, output, session) {
-#   
-#     
-#     output$read_chapter <- renderText({ 
-#         input$var %>% purrr::map(grab_data) %>% unlist()
-#             
-#             # #Clean it up a bit:
-#             # chapter_data <- tibble::as_tibble(unlist(data)) %>%
-#             #     mutate(verse = row_number())
-#             
-#         
-#     })
-#     
-# }
-# 
