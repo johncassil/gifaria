@@ -37,7 +37,7 @@ tanakh_titles <- tanakh_only$contents %>% purrr::map_dfr(extract_titles)
 
 
 
-ui <- navbarPage(theme = shinytheme("sandstone"),
+ui <- navbarPage(theme = "sandstone.min.css",
     
     title = "ג",
     tabPanel("gipharia",
