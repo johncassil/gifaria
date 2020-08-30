@@ -7,12 +7,11 @@
 # make the UI pretty
 # push to shinyapps.io
 
-
-
 library(shiny)
 library(shinymaterial)
 library(DT)
 library(dplyr)
+library(giphyr)
 library(httr)
 library(jsonlite)
 library(purrr)
@@ -52,72 +51,65 @@ ui <- fluidPage(
         # Main panel for displaying outputs ----
         mainPanel(
             
-            # Output: Histogram ----
-            dataTableOutput(outputId = "read_chapter")
+            dataTableOutput(outputId = "read_chapter"),
+            br(),
+            uiOutput("gif_view")
             
         )
     )
 )
 
+find_ele <- function(x, name) {
+  x_names <- names(x)
+  return(x[which(x_names == name)][[1]])
+}
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output, session) {
     
-    output$read_chapter <- renderDataTable({
-        input$chapter_input %>% 
-            as.character() %>% 
-            grab_data() %>% 
-            unlist() %>% 
-            unlist() %>% 
-            tibble::as_tibble() %>%
-            mutate(verse = row_number()) %>% 
-            DT::datatable()
-    }
-    )
+data <- reactive({
+    input$chapter_input %>% 
+        as.character() %>% 
+        grab_data() %>% 
+        unlist() %>% 
+        unlist() %>% 
+        tibble::as_tibble() %>%
+        mutate(verse = row_number())  
+})
     
+output$read_chapter <- renderDataTable({
+    req(data())
+      data() %>% 
+            DT::datatable(rownames = F,selection=list(mode="single", target="row"),
+                          options = list(dom="tipr"))
+    })
+    
+prev_gifs <- reactive({
+       req(search_text())
+        out <- suppressWarnings(
+            gif_search(search_text(),
+                       img_format = c("fixed_height_small", "downsized",
+                                      "downsized_medium", "original")
+                      ))
+        if (is.null(out)) return(NULL)
+        return(out)
+    })
+        
+search_text <- reactive({
+    req(data)
+    req(input$read_chapter_rows_selected)
+    data()[input$read_chapter_rows_selected,] %>% 
+        pull(value)
+})
+
+output$gif_view <- renderUI({
+            req(prev_gifs())
+            apply(prev_gifs(), 1, function(x) {
+                actionLink(find_ele(x, "id"), title = find_ele(x, "slug"),
+                           label = NULL, class = "gifpreview", icon = NULL,
+                           tags$img(src = find_ele(x, "fixed_height_small")))
+            })
+        })
 }
 
 shinyApp(ui = ui, server = server)
-
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# ui <- material_page(
-#     title = "ג gipharia",
-#     nav_bar_fixed = TRUE,
-#     include_fonts = T,
-#     nav_bar_color = "indigo darken-4",
-#     material_side_nav(
-#         image_source = "/icon.png"),
-#     material_row(
-#         material_column(
-#             width = 7,
-#             material_dropdown(input_id = "chapter_picker", 
-#                               label = "Chapter", 
-#                               choices = "Proverbs.1", 
-#                               selected = "Proverbs.1")
-#             )
-#         ),
-#     textOutput(outputId = 'read_chapter')
-# )
-# 
-# server <- function(input, output, session) {
-#   
-#     
-#     output$read_chapter <- renderText({ 
-#         input$var %>% purrr::map(grab_data) %>% unlist()
-#             
-#             # #Clean it up a bit:
-#             # chapter_data <- tibble::as_tibble(unlist(data)) %>%
-#             #     mutate(verse = row_number())
-#             
-#         
-#     })
-#     
-# }
-# 
