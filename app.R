@@ -51,6 +51,8 @@ ui <- navbarPage(theme = shinytheme("sandstone"),
                         choices = tanakh_titles$title),
             uiOutput("chapter_input_dropdown"),
             br(),
+            HTML('<center><h3>Click on a verse to get GIFs!</h3></center>'),
+            
             dataTableOutput(outputId = "read_chapter")
         ),
         
@@ -95,7 +97,9 @@ data <- reactive(grab_data(as.character(input$text_input),
             unlist() %>% 
             unlist() %>% 
               tibble::as_tibble_col(column_name = "Text") %>%
-              mutate(verse = row_number()) %>% 
+              mutate(verse = row_number(),
+                     Text = stringr::str_replace_all(Text, '<i>', ''),
+                     Text = stringr::str_replace_all(Text, '</i>', '')) %>% 
               select(Verse = verse, Text)
 )
    
