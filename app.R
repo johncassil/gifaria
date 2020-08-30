@@ -147,7 +147,7 @@ output$gif_view <- renderUI({
             apply(prev_gifs(), 1, function(x) {
                 actionLink(find_ele(x, "id"), title = find_ele(x, "slug"),
                            label = NULL, class = "gifpreview", icon = NULL,
-                           tags$img(src = find_ele(x, "fixed_height_small")))
+                           tags$img(src = find_ele(x, "downsized_medium")))
             })
         })
 
