@@ -38,28 +38,26 @@ tanakh_titles <- tanakh_only$contents %>% purrr::map_dfr(extract_titles)
 
 ui <- fluidPage(
     
-    # App title ----
     titlePanel("ג gipharia"),
     
-    # Sidebar layout with input and output definitions ----
     sidebarLayout(
         
-        # Sidebar panel for inputs ----
+
         sidebarPanel(
-            # Input: Slider for the number of bins ----
+
             selectInput(inputId = "text_input",
                         label = "Select a text:",
                         choices = tanakh_titles$title),
-            
-            uiOutput("chapter_input_dropdown")
-            
+            uiOutput("chapter_input_dropdown"),
+            br(),
+            dataTableOutput(outputId = "read_chapter")
         ),
         
-        # Main panel for displaying outputs ----
+
         mainPanel(
             
-            dataTableOutput(outputId = "read_chapter"),
-            br(),
+
+
             uiOutput("gif_view")
             
         )
@@ -96,7 +94,8 @@ data <- reactive(grab_data(as.character(input$text_input),
             unlist() %>% 
             unlist() %>% 
             tibble::as_tibble() %>%
-            mutate(verse = row_number()) 
+            mutate(verse = row_number()) %>% 
+            select(Verse = verse, Text = value)
 )
    
 output$read_chapter <- renderDataTable({
@@ -139,7 +138,7 @@ search_text <- reactive({
     req(data)
     req(input$read_chapter_rows_selected)
     data()[input$read_chapter_rows_selected,] %>% 
-        pull(value)
+        pull(Text)
 })
 
 output$gif_view <- renderUI({
