@@ -132,8 +132,7 @@ server <- function(input, output, session) {
     req(search_text())
     out <- suppressWarnings(
       gif_search(search_text(),
-                 img_format = c("fixed_height_small", "downsized",
-                                "downsized_medium", "original")
+                 img_format = c("downsized_medium")
       ))
     if (is.null(out)) return(NULL)
     return(out)
