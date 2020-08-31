@@ -1,6 +1,6 @@
 # gifaria
 
-This project is a submission for [Sefaria](https://www.sefaria.org)'s Powered by Sefaria [Contest](http://sefaria.nationbuilder.com/contest).
+This project is a submission by [John Cassil](http://johncassil.com) & [Tiger Tang](https://github.com/CodingTigerTang/) for [Sefaria](https://www.sefaria.org)'s Powered by Sefaria [Contest](http://sefaria.nationbuilder.com/contest).
 
 We decided to make a fun project to integrate the Sefaria & Giphy APIs.  We call the Sefaria API to build dropdowns for the user to select a book & chapter from the tanakh, and to display the text. When a user clicks on a verse, we call the Giphy API (using the text of the verse) to return (hopefully) relevant & fun gifs.
 
